@@ -197,6 +197,14 @@ class Service:
             raise ValueError("Plan slot must match session slot")
         if session["status"] == "complete" or session["trials"] >= session["max_trials"]:
             raise ValueError("Session complete or trial limit reached; create a new session for more trials")
+        changing_tone = (
+            session["current_plan"] and plan.model_dump()["chain"] != session["current_plan"]["chain"]
+        )
+        if changing_tone and not session.get("pending_plan"):
+            if len(session["baseline_ids"]) < 2:
+                raise ValueError("Record two baseline takes before adjusting the verified tone")
+            if session["status"] != "awaiting_adjustment":
+                raise ValueError("Record a fresh take of the current candidate before another adjustment")
 
         def work(s, progress):
             if any(

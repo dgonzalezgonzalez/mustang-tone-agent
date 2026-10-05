@@ -140,6 +140,17 @@ def test_baseline_requirement_and_trial_limit(service):
         service.candidate(session["id"])
 
 
+def test_new_candidates_require_baselines_and_fresh_playing(service):
+    session = service.create_session(SessionRequest())
+    service.update(session, current_plan=plan().model_dump(), status="awaiting_take")
+    with pytest.raises(ValueError, match="two baseline takes"):
+        service.apply(session["id"], plan(6))
+    service.update(session, baseline_ids=["first", "second"])
+    with pytest.raises(ValueError, match="fresh take"):
+        service.apply(session["id"], plan(6))
+    assert service.store.list("job") == []
+
+
 def test_capture_needs_user_readiness(service):
     session = service.create_session(SessionRequest())
     with pytest.raises(ValueError, match="Press Ready"):

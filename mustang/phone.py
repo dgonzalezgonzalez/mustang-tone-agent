@@ -698,6 +698,8 @@ class Phone:
         self.open_slot(slot)
         self.verify_slot(slot, name)
         readback = self.verify_plan(expected) if expected else {"verified": True, "chain": self.read_chain()}
+        self.verify_slot(slot)
+        self.verify_ble()
         return {
             "slot": slot,
             "name": name,
