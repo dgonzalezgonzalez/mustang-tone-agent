@@ -4,7 +4,7 @@ This record distinguishes software checks from physical demonstration. Live vali
 
 ## Completed checks
 
-- Nineteen automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention, restore failures and HTTP authentication/origin checks.
+- Twenty automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures and HTTP authentication/origin checks.
 - React/TypeScript production build passes; Ruff passes.
 - GT40 USB input detected under Windows WASAPI, 48 kHz stereo.
 - Android Fender Tone 5.1.3 selected Studio Preamp, British 70s, Chromatic Pitch Shifter and Sine Chorus. Ordered three-block chain was read back through model titles.
@@ -13,6 +13,7 @@ This record distinguishes software checks from physical demonstration. Live vali
 - The official studio recording's short excerpt was acquired locally and processed with Demucs `htdemucs_6s`. Guitar output passed basic quality checks. Audio and weights are private and are not published.
 - Tev 0.8B: 26/40 correct, warm p95 1.68 seconds. Tev 4B: 32/40 correct, warm p95 6.38 seconds. Neither is enabled automatically.
 - Codex initialized the registered local MCP server and discovered its tool inventory. Python SDK stdio and Streamable HTTP checks pass. An independent JavaScript SDK client discovered all 15 tools and called capabilities successfully.
+- The public repository is published at https://github.com/dgonzalezgonzalez/mustang-tone-agent. The Windows installer and desktop launcher pass; a fresh authenticated browser load reports no console errors or warnings.
 
 ## Remaining live acceptance
 
