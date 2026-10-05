@@ -1,0 +1,9 @@
+{
+  "name": "mustang-tone-agent",
+  "version": "0.1.0",
+  "description": "Fender Mustang GT40 tone planning, verified control, and USB comparisons",
+  "author": {"name": "Diego González-González"},
+  "license": "MIT",
+  "skills": "./skills/",
+  "mcpServers": "./mcp.json"
+}

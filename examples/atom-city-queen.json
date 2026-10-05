@@ -1,0 +1,50 @@
+{
+  "name": "Atom City Queen AI",
+  "slot": 172,
+  "section": "Main riff",
+  "chain": [
+    {
+      "model": "Chromatic Pitch Shifter",
+      "kind": "effect",
+      "enabled": true,
+      "parameters": {
+        "mix": 2.5,
+        "pitch": 350,
+        "delay": 40,
+        "feedback": 1.5,
+        "tone": 5.5
+      }
+    },
+    {
+      "model": "British 70s",
+      "kind": "amp",
+      "enabled": true,
+      "parameters": {
+        "gain": 6.5,
+        "volume": 3.5,
+        "treble": 4.8,
+        "middle": 6.2,
+        "bass": 4.2
+      }
+    },
+    {
+      "model": "Sine Chorus",
+      "kind": "effect",
+      "enabled": true,
+      "parameters": {
+        "level": 5.5,
+        "depth": 3.0,
+        "phase": 7.0
+      }
+    }
+  ],
+  "rationale": "Starting hypothesis for the doubled, driven, pitch-modulated main riff. The band identifies Rainbow Machine on Atom City Queen. A quiet non-octave shifted layer, short pitch delay and sine chorus approximate part of that movement. British 70s supplies mid-focused distortion with its verified factory 4x12 GB cabinet. Compare recordings before deciding whether to keep or adjust.",
+  "setup_recommendation": "Start with the Squier Telecaster bridge pickup, standard tuning, guitar volume and tone at 10. If attack remains piercing after amp EQ, try the middle pickup position and record fresh baselines. Song-specific tuning has not been verified; match the same notes and phrase in every take.",
+  "limitations": [
+    "An approximation; no original Fractal/Rainbow Machine patch recovered.",
+    "GT40 pitch shifter and chorus cannot reproduce Rainbow Machine regenerative pitch feedback or studio double tracking.",
+    "Chorus rate remains its factory setting, approximately 0.665 Hz, until its frequency control is calibrated.",
+    "A Demucs guitar stem is experimental and may contain other instruments or combine multiple guitar layers.",
+    "The user-built Atom City Queen preset in slot 171 is excluded."
+  ]
+}

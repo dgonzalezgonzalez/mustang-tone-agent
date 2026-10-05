@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "mustang-tone-agent",
+  "version": "0.1.0",
+  "description": "Local Fender Mustang GT40 control and song-tone production workflow",
+  "author": {"name": "Diego González-González"},
+  "repository": "https://github.com/dgonzalezgonzalez/mustang-tone-agent",
+  "license": "MIT"
+}
