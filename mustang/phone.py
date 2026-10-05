@@ -73,6 +73,13 @@ class Phone:
         }
 
     def screenshot(self) -> np.ndarray:
+        # Screen timeout can occur while OCR is working. WAKEUP never toggles an awake
+        # display off and does not change the user's timeout or bypass a secure lock.
+        now = time.monotonic()
+        if now - getattr(self, "_last_screen_wake", float("-inf")) >= 10:
+            self.run("shell", "input", "keyevent", "224")
+            self._last_screen_wake = now
+            time.sleep(0.25)
         image = np.array(Image.open(io.BytesIO(self.run("exec-out", "screencap", "-p"))).convert("RGB"))
         h, w = image.shape[:2]
         if h / w < 1.8:

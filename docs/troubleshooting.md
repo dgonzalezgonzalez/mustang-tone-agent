@@ -4,6 +4,8 @@
 
 **Unsupported Tone version or uncertain screen:** stop. Recalibrate the adapter against the installed version before writing. Do not substitute guessed tap coordinates or treat a tap as a successful change.
 
+**Screen sleeps during verification:** the adapter periodically sends Android WAKEUP before screenshots. This leaves the screen-timeout setting unchanged. Unlock a secure lock screen yourself; the adapter stops if Fender Tone's controls cannot be verified.
+
 **Wrong preset selected:** open the intended empty slot in Fender Tone. A named existing preset is deliberately refused. If another session owns the slot, continue it or restore its original checkpoint first.
 
 **Partial or interrupted application:** reconnect, inspect the slot, then use Restore original. A checkpoint remains in private runtime data. Stop prevents further actions at a safe boundary; restoration is a separate operation. Restarted jobs are marked interrupted rather than silently retried.

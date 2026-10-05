@@ -1,9 +1,39 @@
+import io
 import threading
 
 import pytest
+from PIL import Image
 
 from mustang.models import Block, CaptureRequest, SessionRequest, TonePlan
 from mustang.phone import ControlError, Phone, Text
+
+
+def test_screen_reads_refresh_wake_without_changing_timeout(monkeypatch):
+    phone = object.__new__(Phone)
+    frame = io.BytesIO()
+    Image.new("RGB", (100, 220)).save(frame, format="PNG")
+    calls = []
+    clock = [20.0]
+    monkeypatch.setattr("mustang.phone.time.monotonic", lambda: clock[0])
+    monkeypatch.setattr("mustang.phone.time.sleep", lambda _: None)
+
+    def run(*args):
+        calls.append(args)
+        return frame.getvalue() if args[0] == "exec-out" else b""
+
+    phone.run = run
+    phone.screenshot()
+    clock[0] = 25.0
+    phone.screenshot()
+    clock[0] = 31.0
+    phone.screenshot()
+    assert calls == [
+        ("shell", "input", "keyevent", "224"),
+        ("exec-out", "screencap", "-p"),
+        ("exec-out", "screencap", "-p"),
+        ("shell", "input", "keyevent", "224"),
+        ("exec-out", "screencap", "-p"),
+    ]
 
 
 def test_historical_bluetooth_log_does_not_prove_current_connection():

@@ -4,7 +4,7 @@ This record distinguishes software checks from physical demonstration. Live vali
 
 ## Completed checks
 
-- Twenty-eight automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures, pedal-triggered slot changes, bypass readback, safe save navigation, starred current slots, keyboard dismissal, truncated names, fresh playing between candidates and HTTP authentication/origin checks.
+- Twenty-nine automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures, pedal-triggered slot changes, bypass readback, safe save navigation, starred current slots, keyboard dismissal, truncated names, fresh playing between candidates, periodic screen wake and HTTP authentication/origin checks.
 - React/TypeScript production build passes; Ruff passes.
 - GT40 USB input detected under Windows WASAPI, 48 kHz stereo.
 - Android Fender Tone 5.1.3 selected Studio Preamp, British 70s, Chromatic Pitch Shifter and Sine Chorus. Ordered three-block chain was read back through model titles.
