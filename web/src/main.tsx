@@ -52,7 +52,7 @@ type Session = {
   setup_recommendation: string;
   limitations: string[];
 };
-type Job = { id: string; status: string; message: string };
+type Job = { id: string; action: string; status: string; message: string };
 type State = {
   sessions: Session[];
   presets: { id: string; plan: Plan }[];
@@ -88,7 +88,15 @@ async function api(path: string, body?: unknown): Promise<any> {
   if (!res.ok) throw new Error(value.detail || res.statusText);
   return value;
 }
-function Player({ id, label }: { id: string; label: string }) {
+function Player({
+  id,
+  label,
+  blocked = false,
+}: {
+  id: string;
+  label: string;
+  blocked?: boolean;
+}) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
   useEffect(() => {
@@ -117,8 +125,16 @@ function Player({ id, label }: { id: string; label: string }) {
       {error ? (
         <small>{error}</small>
       ) : (
-        <audio controls src={url} preload="metadata" />
+        <audio
+          controls={!blocked}
+          src={url}
+          preload="metadata"
+          onPlay={(event) => {
+            if (blocked) event.currentTarget.pause();
+          }}
+        />
       )}
+      {blocked && <small>Playback paused during recording.</small>}
     </div>
   );
 }
@@ -175,6 +191,12 @@ function App() {
   const busy = pending || !!state.active_job;
   const job =
     state.jobs.find((j) => j.id === state.active_job) || state.jobs[0];
+  const recording =
+    job?.action === "capture" && ["queued", "running"].includes(job.status);
+  useEffect(() => {
+    if (recording)
+      document.querySelectorAll("audio").forEach((audio) => audio.pause());
+  }, [recording]);
   const path = (a: string) => "/sessions/" + s?.id + "/" + a;
   async function refresh() {
     try {
@@ -528,6 +550,7 @@ function App() {
               <>
                 <Player
                   id={s.reference_id}
+                  blocked={recording}
                   label={
                     s.reference_quality === "separated"
                       ? "Extracted guitar · level matched"
@@ -707,11 +730,16 @@ function App() {
             {s?.takes.length ? (
               <Player
                 id={s.takes.at(-1)!}
+                blocked={recording}
                 label="Latest take · level matched"
               />
             ) : null}
             {s?.best_take && s.best_take !== s.takes.at(-1) && (
-              <Player id={s.best_take} label="Best measured take" />
+              <Player
+                id={s.best_take}
+                label="Best measured take"
+                blocked={recording}
+              />
             )}
           </Card>
           <Card step="05" title="Refine & keep">
