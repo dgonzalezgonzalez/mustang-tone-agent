@@ -235,6 +235,10 @@ class Phone:
                 return self.header()
             except ControlError:
                 texts = self.texts()
+                if self.is_save_dialog(texts):
+                    self.tap_text("CANCEL", min_y=0.9)
+                    time.sleep(0.6)
+                    continue
                 if any(
                     t.text.replace(" ", "").casefold() == "mypresets" and 0.09 < t.y < 0.14 for t in texts
                 ):
@@ -257,9 +261,42 @@ class Phone:
 
     def verify_slot(self, slot: int, expected_name: str | None = None):
         header = self.header()
-        if header["slot"] != slot or (expected_name and header["name"] != expected_name):
+        if header["slot"] != slot:
             raise ControlError(f"Preset slot/name mismatch: {header}. Refusing to edit.")
+        if expected_name and header["name"] != expected_name:
+            observed = self.read_full_name()
+            if not self.name_matches(observed, expected_name):
+                raise ControlError(f"Full preset name mismatch: {observed!r}. Refusing to edit.")
+            if self.header()["slot"] != slot:
+                raise ControlError("Preset changed during full-name inspection")
+            header["name"] = expected_name
         return header
+
+    @staticmethod
+    def name_matches(observed: str, expected: str) -> bool:
+        # Tone's font renders the capital I in the AI suffix as a vertical stroke;
+        # RapidOCR consistently reads that particular suffix as 'Al'. No truncated text is accepted.
+        return observed == expected or (expected.endswith(" AI") and observed == expected[:-1] + "l")
+
+    def save_field_name(self) -> str:
+        parts = [
+            t
+            for t in self.region_texts(0.09, 0.13)
+            if t.x < 0.8 and t.confidence > 0.95 and t.text.casefold() != "clear"
+        ]
+        if not parts or max(t.y for t in parts) - min(t.y for t in parts) > 0.015:
+            raise ControlError("Full preset name not reliably readable")
+        return " ".join(t.text.strip() for t in sorted(parts, key=lambda t: t.x))
+
+    def read_full_name(self) -> str:
+        self.tap_text("Save", max_y=0.09)
+        time.sleep(0.7)
+        if not self.is_save_dialog(self.texts()):
+            raise ControlError("Full-name inspection dialog not recognized")
+        name = self.save_field_name()
+        self.tap_text("CANCEL", min_y=0.9)
+        time.sleep(0.6)
+        return name
 
     def preset_row(self, slot: int) -> Text:
         for _ in range(16):
@@ -621,25 +658,25 @@ class Phone:
         if not re.fullmatch(r"[A-Za-z0-9 _.-]{1,28}", name):
             raise ControlError("Preset names use 1–28 ASCII letters, numbers, spaces, '.', '-' or '_'")
         self.dismiss_parameter()
-        header = self.verify_slot(slot)
+        self.verify_slot(slot)
         self.tap_text("Save", max_y=0.09)
         time.sleep(0.7)
         texts = self.texts()
-        if not any("Preset Name" in t.text for t in texts):
+        if not self.is_save_dialog(texts):
             raise ControlError("Save dialog not recognized")
-        if header["name"] != name:
+        if not self.name_matches(self.save_field_name(), name):
             self.tap_text("clear")
             self.tap(0.4, 0.11)
+            time.sleep(0.8)
             self.run("shell", "input", "text", name.replace(" ", "%s"))
-            self.run("shell", "input", "keyevent", "4")  # Dismiss the keyboard after confirmed text editing.
             time.sleep(0.5)
-        rows = [t for t in self.texts() if re.match(rf"^{slot}\s*\D", t.text) and 0.2 < t.y < 0.92]
-        if len(rows) != 1:
-            raise ControlError("Intended save location not visible; no save performed")
-        self.tap(rows[0].x, rows[0].y)
+            self.hide_keyboard()
+        row = self.save_row(slot)
+        self.tap(row.x, row.y)
         self.tap_text("SAVE", min_y=0.9)
         time.sleep(1)
         self.verify_slot(slot, name)
+        getattr(self, "progress", lambda _: None)("Saved; switching away and reloading the preset")
         self.back()
         texts = self.texts()
         rows = [t for t in texts if 0.17 < t.y < 0.9 and re.fullmatch(r"\d{1,3}\s+Empty", t.text)]
@@ -669,6 +706,57 @@ class Phone:
             "verified": True,
             "readback": readback,
         }
+
+    def save_row(self, slot: int) -> Text:
+        for _ in range(12):
+            texts = self.texts()
+            if not self.is_save_dialog(texts):
+                raise ControlError("Save location dialog not recognized; no save performed")
+            rows = [
+                (int(m[1]), t)
+                for t in texts
+                if 0.22 < t.y < 0.89 and t.confidence > 0.9
+                for m in [re.match(r"^\*?\s*(\d{1,3})\s*\D", t.text)]
+                if m
+            ]
+            found = next((t for number, t in rows if number == slot), None)
+            if found:
+                time.sleep(0.5)
+                check = [t for t in self.region_texts(0.22, 0.89) if re.match(rf"^\*?\s*{slot}\s*\D", t.text)]
+                if len(check) == 1 and abs(check[0].y - found.y) < 0.003:
+                    return check[0]
+                continue
+            if not rows:
+                raise ControlError("Save location rows not readable; no save performed")
+            upward = slot > max(number for number, _ in rows)
+            self.swipe(0.65, 0.72 if upward else 0.4, 0.65, 0.52 if upward else 0.6, 1100)
+            time.sleep(1)
+        raise ControlError("Intended save location not found within bounded navigation")
+
+    @staticmethod
+    def is_save_dialog(texts: list[Text]) -> bool:
+        heading = any(
+            t.text == "Preset Name" or "save location in my presets" in t.text.casefold() for t in texts
+        )
+        footer = {t.text.upper() for t in texts if t.y > 0.9 and t.confidence > 0.9}
+        return heading and {"SAVE", "CANCEL"}.issubset(footer)
+
+    def hide_keyboard(self):
+        status = self.run("shell", "dumpsys", "input_method").decode(errors="replace")
+        if "mInputShown=true" not in status:
+            return
+        buttons = [
+            t
+            for t in self.region_texts(0.8, 0.95)
+            if t.x > 0.75 and t.confidence > 0.9 and t.text.casefold() in {"hecho", "done", "ok"}
+        ]
+        if len(buttons) != 1:
+            raise ControlError("Keyboard Done control needs calibration; no Back event sent")
+        self.tap(buttons[0].x, buttons[0].y)
+        time.sleep(0.8)
+        status = self.run("shell", "dumpsys", "input_method").decode(errors="replace")
+        if "mInputShown=true" in status:
+            raise ControlError("Keyboard dismissal failed readback")
 
     def apply_plan(self, plan, previous=None) -> dict:
         from .config import ROOT
@@ -760,6 +848,7 @@ class Phone:
             if block.kind == "effect" and self.effect_enabled() != block.enabled:
                 raise ControlError(f"Saved effect bypass failed readback: {block.model}")
             for parameter, target in block.parameters.items():
+                getattr(self, "progress", lambda _: None)(f"Reading {block.model}: {parameter}")
                 value = self.native_value(parameter)
                 if isinstance(target, str) or abs(value - target) > 0.051:
                     raise ControlError(f"Saved parameter failed readback: {block.model}.{parameter}")

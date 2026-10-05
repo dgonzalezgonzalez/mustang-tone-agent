@@ -4,11 +4,12 @@ This record distinguishes software checks from physical demonstration. Live vali
 
 ## Completed checks
 
-- Twenty-two automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures, pedal-triggered slot changes, bypass readback and HTTP authentication/origin checks.
+- Twenty-seven automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures, pedal-triggered slot changes, bypass readback, safe save navigation, starred current slots, keyboard dismissal, truncated names and HTTP authentication/origin checks.
 - React/TypeScript production build passes; Ruff passes.
 - GT40 USB input detected under Windows WASAPI, 48 kHz stereo.
 - Android Fender Tone 5.1.3 selected Studio Preamp, British 70s, Chromatic Pitch Shifter and Sine Chorus. Ordered three-block chain was read back through model titles.
 - Native parameter drawers read successfully. Pitch was set to +350 cents and verified numerically. Effect insertion/removal and amp replacement were demonstrated in empty slot 172.
+- The complete Atom City Queen AI plan was applied through Codex MCP and all 13 requested values matched numeric readback. The named preset has been physically saved in slot 172; service-level reload verification is ongoing.
 - Both demo effects were bypassed and returned to active through Fender Tone, with displayed-state readback. Preset application and reload now verify these states. Small-range controls use verified increment buttons; coarse interpolation is reserved for ranges requiring more than 100 increments.
 - Empty slot 172 was restored to Studio Preamp defaults, saved, switched away from, reloaded and numerically verified: volume 10.0; gain, treble, middle and bass 5.5. The complete song chain still requires its final save/reload test.
 - The official studio recording's short excerpt was acquired locally and processed with Demucs `htdemucs_6s`. Guitar output passed basic quality checks. Audio and weights are private and are not published.

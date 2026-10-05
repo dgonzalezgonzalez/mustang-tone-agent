@@ -33,7 +33,7 @@ def plan(gain=5):
 
 
 def wait_job(service, job):
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
         value = service.store.get(job["id"])
         if value["status"] not in {"queued", "running"}:

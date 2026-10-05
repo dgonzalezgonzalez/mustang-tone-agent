@@ -153,6 +153,7 @@ function App() {
   const [selected, setSelected] = useState("");
   const [connections, setConnections] = useState<any>();
   const [error, setError] = useState("");
+  const [syncError, setSyncError] = useState("");
   const [notice, setNotice] = useState("");
   const [pending, setPending] = useState(false);
   const [song, setSong] = useState("Atom City Queen");
@@ -178,8 +179,9 @@ function App() {
   async function refresh() {
     try {
       setState(await api("/state"));
+      setSyncError("");
     } catch (e) {
-      setError((e as Error).message);
+      setSyncError((e as Error).message);
     }
   }
   async function run(action: () => Promise<any>, message = "") {
@@ -343,9 +345,9 @@ function App() {
           </span>
           <span className="muted">No paid AI calls</span>
         </div>
-        {error && (
+        {(error || syncError) && (
           <div className="alert error" role="alert">
-            {error}
+            {error || syncError}
           </div>
         )}
         {notice && <div className="alert success">{notice}</div>}

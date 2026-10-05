@@ -1,5 +1,7 @@
 # Architecture
 
+Preset names truncated in the editor are checked in the full save dialog without saving changes. The adapter accounts for RapidOCR reading the font's capital I in the final `AI` suffix as lowercase l; it does not accept truncated names as complete. Numeric slot checks remain mandatory. Save navigation recognizes the current-slot star, and keyboard dismissal uses the visible Done control rather than an Android Back event.
+
 React is served locally by a Python 3.12 FastAPI backend. SQLite stores song sessions, job results, checkpoints, reference provenance, takes and saved presets. One worker serializes all operations that touch hardware or audio. A cancellation event reaches ADB, recording and external reference/separation processes.
 
 The stdio and authenticated Streamable HTTP MCP transports proxy the same backend. Agents receive typed capabilities, compact state and asynchronous job IDs. They do not receive arbitrary shell, tap or file-write tools. The production skill guides song research and bounded refinement; plugin manifests package discovery without coupling the backend to one agent.

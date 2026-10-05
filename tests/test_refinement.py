@@ -52,6 +52,26 @@ def test_saved_preset_does_not_overwrite_session(service):
     assert service.store.list("preset")[0]["id"] != s["id"]
 
 
+def test_save_retry_refuses_a_changed_parameter_before_writing(service):
+    class ChangedPhone(FakePhone):
+        saved = False
+
+        def verify_plan(self, plan):
+            raise RuntimeError("Saved parameter failed readback")
+
+        def save_reload(self, *a, **kw):
+            ChangedPhone.saved = True
+            return super().save_reload(*a, **kw)
+
+    service.phone_factory = ChangedPhone
+    s = service.create_session(SessionRequest())
+    service.update(s, owned=True, current_plan=plan().model_dump(), status="needs_attention")
+    job = wait_job(service, service.save(s["id"]))
+    assert job["status"] == "failed"
+    assert not ChangedPhone.saved
+    assert not service.store.list("preset")
+
+
 def test_best_candidate_retained_and_plateau_stops(service, monkeypatch):
     t = np.arange(240000) / 48000
     features = audio.features(0.1 * np.sin(2 * np.pi * 220 * t), 48000)

@@ -219,7 +219,9 @@ class Service:
             if s.get("pending_plan"):
                 allowed_names.add(s["pending_plan"]["name"])
             if s["owned"] and header["name"] not in allowed_names:
-                raise ControlError("The session's preset was changed externally")
+                full_name = phone.read_full_name()
+                if not any(phone.name_matches(full_name, name) for name in allowed_names):
+                    raise ControlError("The session's preset was changed externally")
             if not s["checkpoint"]:
                 if phone.read_chain() != ["Studio Preamp"]:
                     raise ControlError(
@@ -251,9 +253,15 @@ class Service:
             if not s["owned"] or not s["current_plan"]:
                 raise ValueError("No verified preset to save")
             phone = self.phone()
+            phone.progress = progress
             phone.ensure_editor()
-            if s.get("pending_plan") or s["status"] == "needs_attention":
+            if s.get("pending_plan"):
                 raise ValueError("Apply and verify the preset again before saving")
+            if s["status"] == "needs_attention":
+                progress("Rechecking the complete preset before retrying save")
+                phone.verify_slot(s["slot"])
+                phone.verify_plan(TonePlan.model_validate(s["current_plan"]))
+                phone.verify_slot(s["slot"])
             progress("Saving and reloading preset")
             result = phone.save_reload(
                 s["slot"], s["current_plan"]["name"], expected=TonePlan.model_validate(s["current_plan"])
@@ -271,6 +279,8 @@ class Service:
                 },
                 key=previous["id"] if previous else None,
             )
+            if s["status"] == "needs_attention":
+                self.update(s, status="awaiting_take")
             return result
 
         return self.submit(session_id, "save", work, request_id)

@@ -3,7 +3,7 @@ import threading
 import pytest
 
 from mustang.models import Block, CaptureRequest, SessionRequest, TonePlan
-from mustang.phone import ControlError, Phone
+from mustang.phone import ControlError, Phone, Text
 
 
 def test_historical_bluetooth_log_does_not_prove_current_connection():
@@ -59,6 +59,52 @@ def test_pedal_preset_change_stops_chain_inspection_before_next_tap():
     with pytest.raises(ControlError, match="slot/name mismatch"):
         phone.read_chain()
     assert taps == [(0.2, 0.503)]
+
+
+def test_save_navigation_never_substitutes_an_existing_preset(monkeypatch):
+    phone = object.__new__(Phone)
+    phone.texts = lambda: [
+        Text("Preset Name", 0.2, 0.06, 1),
+        Text("SAVE", 0.65, 0.935, 1),
+        Text("CANCEL", 0.35, 0.935, 1),
+        Text("171 Atom City Queen", 0.5, 0.7, 1),
+    ]
+    swipes = []
+    phone.swipe = lambda *a: swipes.append(a)
+    monkeypatch.setattr("mustang.phone.time.sleep", lambda *a: None)
+    with pytest.raises(ControlError, match="bounded navigation"):
+        phone.save_row(172)
+    assert 0 < len(swipes) <= 12
+
+
+def test_starred_current_slot_is_a_valid_save_target(monkeypatch):
+    phone = object.__new__(Phone)
+    current = Text("* 172 Empty", 0.5, 0.8, 1)
+    phone.texts = lambda: [
+        Text("Save Location in My Presets", 0.3, 0.16, 1),
+        Text("SAVE", 0.65, 0.935, 1),
+        Text("CANCEL", 0.35, 0.935, 1),
+        current,
+    ]
+    phone.region_texts = lambda *a: [current]
+    monkeypatch.setattr("mustang.phone.time.sleep", lambda *a: None)
+    assert phone.save_row(172) is current
+
+
+def test_closed_keyboard_never_sends_a_back_event():
+    phone = object.__new__(Phone)
+    calls = []
+    phone.run = lambda *a: calls.append(a) or b"mInputShown=false"
+    phone.tap = lambda *a: pytest.fail("Closed keyboard must not receive a dismissal tap")
+    phone.hide_keyboard()
+    assert calls == [("shell", "dumpsys", "input_method")]
+
+
+def test_truncated_names_are_never_accepted_as_full_name_readback():
+    assert Phone.name_matches("Atom City Queen AI", "Atom City Queen AI")
+    assert Phone.name_matches("Atom City Queen Al", "Atom City Queen AI")
+    assert not Phone.name_matches("Atom City ..n Al", "Atom City Queen AI")
+    assert not Phone.name_matches("Atom City Queen", "Atom City Queen AI")
 
 
 def test_native_catalog_rejects_zero_and_fractional_cent(tmp_path):
