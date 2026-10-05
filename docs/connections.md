@@ -33,8 +33,8 @@ The server listens only on loopback and checks authentication, host and origin. 
 
 ## MGT-4
 
-The development amplifier has firmware 3.0.43. Later firmware supports effect-category assignments described in Fender's September 2018 manual addendum. Inspect **MENU → FOOTSWITCH → MGT-4 → FX Assign** on the amplifier and confirm the installed firmware's actual labels. Effects-mode buttons operate assigned categories, potentially bypassing multiple effects. They are not arbitrary individual-effect buttons.
+The development amplifier has firmware 3.0.43. Fender's September 2018 addendum documents **First 3 (Default)** and configurations for stompbox, modulation, delay and reverb. It does not document a dedicated Filters + Pitch category assignment. Inspect **MENU → FOOTSWITCH → MGT-4 → FX Assign** and confirm the actual labels on your firmware.
 
-Use PRESETS mode to select presets; test returning to the saved demo. Use EFFECTS mode to test pitch/filter and modulation bypass, then restore both. Footswitch behavior requires a physical live check by the player. The app must not mark it tested merely because a preset was saved.
+Use PRESETS mode to select presets; test returning to the saved demo. For this two-effect demo, select **First 3 (Default)** and use EFFECTS mode to check which buttons bypass the pitch shifter and chorus. Return both to active afterward. Category configurations may bypass several effects together. Footswitch behavior requires a physical live check by the player; it is not marked tested merely because a preset was saved.
 
-Sources: [Fender MGT-4 support](https://support.fender.com/hc/en-us/articles/42658477091483-How-do-I-use-the-MGT-4-4-Button-footswitch-with-the-Mustang-GT-amps), [Fender-authored 2018 addendum hosted by Kraft Music](https://files.kraftmusic.com/media/ownersmanual/Fender_Mustang_GT_Addendum_to_Owners_Manual_September_2018.pdf).
+Sources: [Fender MGT-4 support](https://support.fender.com/hc/en-us/articles/42658477091483-How-do-I-use-the-MGT-4-4-Button-footswitch-with-the-Mustang-GT-amps), [Fender 2018 addendum, page 4](https://www.fmicassets.com/Damroot/Original/10001/OM_2310XXX000_2018_Mustang_GT_Addendum.pdf).

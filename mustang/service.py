@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import threading
 import uuid
 from concurrent.futures import ThreadPoolExecutor
@@ -168,6 +169,7 @@ class Service:
                 )
             except Exception as exc:
                 status = "cancelled" if self.cancel.is_set() else "failed"
+                logging.getLogger(__name__).exception("Operation %s failed", action)
                 self.store.put(
                     "job", {**self.store.get(job["id"]), "status": status, "message": str(exc)[:1800]}
                 )

@@ -4,11 +4,12 @@ This record distinguishes software checks from physical demonstration. Live vali
 
 ## Completed checks
 
-- Twenty automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures and HTTP authentication/origin checks.
+- Twenty-two automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures, pedal-triggered slot changes, bypass readback and HTTP authentication/origin checks.
 - React/TypeScript production build passes; Ruff passes.
 - GT40 USB input detected under Windows WASAPI, 48 kHz stereo.
 - Android Fender Tone 5.1.3 selected Studio Preamp, British 70s, Chromatic Pitch Shifter and Sine Chorus. Ordered three-block chain was read back through model titles.
 - Native parameter drawers read successfully. Pitch was set to +350 cents and verified numerically. Effect insertion/removal and amp replacement were demonstrated in empty slot 172.
+- Both demo effects were bypassed and returned to active through Fender Tone, with displayed-state readback. Preset application and reload now verify these states. Small-range controls use verified increment buttons; coarse interpolation is reserved for ranges requiring more than 100 increments.
 - Empty slot 172 was restored to Studio Preamp defaults, saved, switched away from, reloaded and numerically verified: volume 10.0; gain, treble, middle and bass 5.5. The complete song chain still requires its final save/reload test.
 - The official studio recording's short excerpt was acquired locally and processed with Demucs `htdemucs_6s`. Guitar output passed basic quality checks. Audio and weights are private and are not published.
 - Tev 0.8B: 26/40 correct, warm p95 1.68 seconds. Tev 4B: 32/40 correct, warm p95 6.38 seconds. Neither is enabled automatically.
@@ -18,7 +19,7 @@ This record distinguishes software checks from physical demonstration. Live vali
 ## Remaining live acceptance
 
 - Finish applying Atom City Queen AI through the service, save it and verify parameters after an actual preset reload.
-- Confirm effects are enabled and physical master volume unchanged.
+- Confirm effect states survive the final song preset reload; physical master volume has not been touched by the adapter.
 - Record two baseline takes with the player, compare the same phrase, refine within bounds, retain the best candidate and save it.
 - Confirm Bluetooth amplifier control survives recording rather than inferring it from the phone's USB connection.
 - Exercise MGT-4 preset selection and firmware-specific category bypass with the player.

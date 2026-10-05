@@ -28,6 +28,39 @@ def test_tap_without_changed_readback_cannot_report_success():
         phone.set_native(172, "treble", 6.0, minimum=1, maximum=10, step=0.1)
 
 
+def test_bypass_tap_requires_state_readback():
+    phone = object.__new__(Phone)
+    phone.verify_ble = lambda: None
+    phone.verify_slot = lambda *a: None
+    phone.effect_enabled = lambda: False
+    phone.tap_text = lambda *a, **kw: None
+    with pytest.raises(ControlError, match="bypass change failed readback"):
+        phone.set_effect_enabled(172, True)
+
+
+def test_pedal_preset_change_stops_chain_inspection_before_next_tap():
+    phone = object.__new__(Phone)
+    phone.header = lambda: {"slot": 172}
+    phone.block_positions = lambda: [0.2, 0.5]
+    visits = []
+    taps = []
+
+    def chain_view():
+        visits.append(True)
+
+    def verify_slot(slot):
+        if len(visits) > 1:
+            raise ControlError("Preset slot/name mismatch: refusing to edit")
+
+    phone.chain_view = chain_view
+    phone.verify_slot = verify_slot
+    phone.tap = lambda *a: taps.append(a)
+    phone.selected_amp = lambda: "Chromatic Pitch Shifter"
+    with pytest.raises(ControlError, match="slot/name mismatch"):
+        phone.read_chain()
+    assert taps == [(0.2, 0.503)]
+
+
 def test_native_catalog_rejects_zero_and_fractional_cent(tmp_path):
     from mustang.service import Service
     from mustang.store import Store

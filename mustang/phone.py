@@ -201,6 +201,16 @@ class Phone:
         time.sleep(0.6)
 
     def header(self) -> dict:
+        for attempt in range(3):
+            try:
+                return self._header_once()
+            except ControlError:
+                if attempt == 2:
+                    raise
+                time.sleep(0.4)
+        raise ControlError("Preset editor not recognized")
+
+    def _header_once(self) -> dict:
         texts = self.region_texts(0.035, 0.085) + self.region_texts(0.91, 0.99)
         top = [t.text for t in texts if 0.035 < t.y < 0.09 and t.confidence > 0.8]
         joined = " ".join(top)
@@ -215,6 +225,7 @@ class Phone:
         ):
             raise ControlError("Preset editor not recognized. Open the intended preset in Fender Tone.")
         title = joined[match.end() :].replace("Save", "").strip()
+        self._editor_footer = {t.text.casefold() for t in texts if t.y > 0.9}
         return {"slot": int(match[1]), "name": title}
 
     def ensure_editor(self):
@@ -345,9 +356,8 @@ class Phone:
         raise ControlError("Amplifier block not recognized")
 
     def chain_view(self):
-        self.dismiss_parameter()
         self.ensure_editor()
-        if not any(t.text == "Add Block" for t in self.region_texts(0.91, 0.99)):
+        if "add block" not in self._editor_footer:
             self.tap(0.95, 0.85)
         if not any(t.text == "Add Block" for t in self.region_texts(0.91, 0.99)):
             raise ControlError("Signal chain screen not recognized")
@@ -372,6 +382,7 @@ class Phone:
             self.verify_slot(initial)
             self.tap(x, 0.503)
             result.append(self.selected_amp())
+            getattr(self, "progress", lambda _: None)(f"Read signal chain: {' → '.join(result)}")
         self.chain_view()
         self.verify_slot(initial)
         return result
@@ -381,6 +392,7 @@ class Phone:
         if not 0 <= index < len(positions):
             raise ControlError("Block index outside observed chain")
         self.tap(positions[index], 0.503)
+        time.sleep(0.6)  # The model title appears before the footer finishes its animation.
         if self.selected_amp() != expected:
             raise ControlError("Block selection failed model readback")
 
@@ -401,6 +413,27 @@ class Phone:
         self.select_block(index, expected)
         self.verify_slot(slot)
         self.tap_text("Remove", min_y=0.9)
+
+    def effect_enabled(self) -> bool:
+        controls = [
+            t
+            for t in self.region_texts(0.92, 0.98)
+            if 0.35 < t.x < 0.65 and t.confidence > 0.9 and t.text.casefold() in {"bypass", "bypassed"}
+        ]
+        if len(controls) != 1:
+            raise ControlError("Effect bypass state not reliably readable")
+        return controls[0].text.casefold() == "bypass"
+
+    def set_effect_enabled(self, slot: int, enabled: bool):
+        self.verify_ble()
+        self.verify_slot(slot)
+        actual = self.effect_enabled()
+        if actual != enabled:
+            self.tap_text("BYPASS" if actual else "BYPASSED", min_y=0.9)
+            if self.effect_enabled() != enabled:
+                raise ControlError("Effect bypass change failed readback")
+        self.verify_slot(slot)
+        return {"enabled": enabled, "verified": True}
 
     def set_knob_position(self, slot: int, parameter: str, target: float) -> dict:
         if not 0 <= target <= 1:
@@ -533,7 +566,7 @@ class Phone:
                     raise ControlError("Requested value is between calibrated increments")
                 self.dismiss_parameter()
                 return {"parameter": parameter, "requested": target, "observed": value, "verified": True}
-            if count > 100 or (count > 25 and calibration is None and (maximum - minimum) / step <= 100):
+            if count > 100:
                 # The drawer maps the END position to an absolute value, rather than a relative drag.
                 # Measure two points on this specific parameter before interpolating; always read back.
                 if calibration is None:
@@ -645,6 +678,9 @@ class Phone:
             ModelSpec.model_validate(x) for x in json.loads((ROOT / "catalog/tone-5.1.3.json").read_text())
         ]
         plan.validate_catalog(catalog)
+        self.verify_ble()
+        if any(not b.enabled and b.kind == "amp" for b in plan.chain):
+            raise ControlError("Amplifier bypass has not been calibrated")
         self.verify_slot(plan.slot)
         desired = [b.model for b in plan.chain if b.kind != "cabinet"]
         if any(b.kind == "cabinet" for b in plan.chain):
@@ -652,6 +688,7 @@ class Phone:
                 "Explicit cabinet replacement has not been calibrated; use the verified amp default"
             )
         actual = self.read_chain()
+        changed = actual != desired
 
         def insert(block, index):
             category = {"Chromatic Pitch Shifter": "FILT+PITCH", "Sine Chorus": "MOD"}.get(block.model)
@@ -683,16 +720,14 @@ class Phone:
             for index, block in enumerate(plan.chain):
                 if block.kind == "effect":
                     insert(block, index)
-        observed_chain = self.read_chain()
+        observed_chain = self.read_chain() if changed else actual
         if observed_chain != desired:
             raise ControlError(f"Final signal chain differs: observed {observed_chain}; requested {desired}")
         observations = []
         for index, block in enumerate(plan.chain):
             self.select_block(index, block.model)
-            if not block.enabled:
-                raise ControlError(
-                    "Bypass controls require calibration before disabled blocks can be applied"
-                )
+            if block.kind == "effect":
+                self.set_effect_enabled(plan.slot, block.enabled)
             spec = next(m for m in catalog if m.name == block.model and m.kind == block.kind)
             for parameter, value in block.parameters.items():
                 getattr(self, "progress", lambda _: None)(
@@ -712,6 +747,8 @@ class Phone:
                     )
                 )
         self.chain_view()
+        self.verify_slot(plan.slot)
+        self.verify_ble()
         return {"chain": desired, "parameters": observations, "verified": True}
 
     def verify_plan(self, plan) -> dict:
@@ -720,6 +757,8 @@ class Phone:
         values = []
         for index, block in enumerate(plan.chain):
             self.select_block(index, block.model)
+            if block.kind == "effect" and self.effect_enabled() != block.enabled:
+                raise ControlError(f"Saved effect bypass failed readback: {block.model}")
             for parameter, target in block.parameters.items():
                 value = self.native_value(parameter)
                 if isinstance(target, str) or abs(value - target) > 0.051:

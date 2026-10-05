@@ -809,10 +809,12 @@ function App() {
               <summary>MGT-4 footswitch guide</summary>
               <p>
                 Firmware 3.0.43: use PRESETS mode for preset selection. Under
-                MENU → FOOTSWITCH → MGT-4 → FX Assign, confirm each EFFECTS
-                button’s category. A category button can bypass multiple
-                effects. Test pitch/filter and modulation bypass, then restore
-                them. Live pedal verification requires your participation.
+                MENU → FOOTSWITCH → MGT-4 → FX Assign, select First 3 (Default)
+                for this demo. In EFFECTS mode, check which buttons bypass the
+                pitch shifter and chorus, then restore both. Other
+                configurations assign stompbox, modulation, delay and reverb
+                categories; a dedicated pitch category is not documented for
+                this pedal. Live pedal verification requires your participation.
               </p>
             </details>
           </Card>
