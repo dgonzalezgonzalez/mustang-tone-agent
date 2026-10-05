@@ -695,7 +695,10 @@ function App() {
             </div>
             <button
               className="record"
-              disabled={busy || !s?.current_plan || s.status === "complete"}
+              disabled={
+                busy || !s?.current_plan ||
+                ["complete", "needs_attention"].includes(s.status)
+              }
               onClick={() =>
                 capture(s!.baseline_ids.length < 2 ? "baseline" : "trial")
               }

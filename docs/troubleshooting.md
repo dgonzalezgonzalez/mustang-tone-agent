@@ -6,6 +6,10 @@
 
 **Screen sleeps during verification:** the adapter periodically sends Android WAKEUP before screenshots. This leaves the screen-timeout setting unchanged. Unlock a secure lock screen yourself; the adapter stops if Fender Tone's controls cannot be verified.
 
+**Notification panel covers Tone:** launch closes Android's notification panel through the system's collapse command. An unrecognized screen stops navigation without generic Back taps; reopen Fender Tone if it still cannot be recognized.
+
+**Save recovery:** listening acceptance does not clear a hardware error. Retrying Save after an error reopens the session's owned slot when necessary, checks its full name and complete plan, then saves and reloads through a verified Empty neighbor. A renamed slot is refused before saving.
+
 **Wrong preset selected:** open the intended empty slot in Fender Tone. A named existing preset is deliberately refused. If another session owns the slot, continue it or restore its original checkpoint first.
 
 **Partial or interrupted application:** reconnect, inspect the slot, then use Restore original. A checkpoint remains in private runtime data. Stop prevents further actions at a safe boundary; restoration is a separate operation. Restarted jobs are marked interrupted rather than silently retried.

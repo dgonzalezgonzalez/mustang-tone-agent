@@ -267,7 +267,11 @@ class Service:
                 raise ValueError("Apply and verify the preset again before saving")
             if s["status"] == "needs_attention":
                 progress("Rechecking the complete preset before retrying save")
-                phone.verify_slot(s["slot"])
+                if phone.header()["slot"] != s["slot"]:
+                    progress("Reopening the session's owned preset for save recovery")
+                    phone.back()
+                    phone.open_slot(s["slot"])
+                phone.verify_slot(s["slot"], s["current_plan"]["name"])
                 phone.verify_plan(TonePlan.model_validate(s["current_plan"]))
                 phone.verify_slot(s["slot"])
             progress("Saving and reloading preset")
@@ -288,7 +292,7 @@ class Service:
                 key=previous["id"] if previous else None,
             )
             if s["status"] == "needs_attention":
-                self.update(s, status="awaiting_take")
+                self.update(s, status="complete" if s.get("accepted") else "awaiting_take")
             return result
 
         return self.submit(session_id, "save", work, request_id)
@@ -506,7 +510,11 @@ class Service:
     def feedback(self, session_id, feedback: Feedback):
         s = self.session(session_id)
         if feedback.accepted:
-            return self.update(s, status="complete", accepted=True)
+            return self.update(
+                s,
+                status=s["status"] if s["status"] in {"needs_attention", "restored"} else "complete",
+                accepted=True,
+            )
         result = {"description": feedback.description, "decision": None}
         if decisions.status().get("enabled"):
             try:

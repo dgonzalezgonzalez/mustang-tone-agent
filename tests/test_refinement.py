@@ -6,7 +6,7 @@ import soundfile as sf
 from test_core import plan, wait_job
 
 from mustang import audio
-from mustang.models import CaptureRequest, SessionRequest
+from mustang.models import CaptureRequest, Feedback, SessionRequest
 from mustang.service import Service
 from mustang.store import Store
 
@@ -21,7 +21,10 @@ class FakePhone:
     def ensure_editor(self):
         pass
 
-    def verify_slot(self, slot):
+    def header(self):
+        return {"slot": 172, "name": "Fresh tone"}
+
+    def verify_slot(self, slot, expected_name=None):
         return {"slot": slot, "name": "Empty"}
 
     def verify_ble(self):
@@ -70,6 +73,69 @@ def test_save_retry_refuses_a_changed_parameter_before_writing(service):
     assert job["status"] == "failed"
     assert not ChangedPhone.saved
     assert not service.store.list("preset")
+
+
+def test_listening_acceptance_preserves_hardware_failure(service):
+    s = service.create_session(SessionRequest())
+    service.update(s, status="needs_attention")
+    result = service.feedback(s["id"], Feedback(accepted=True))
+    assert result["accepted"] is True
+    assert result["status"] == "needs_attention"
+
+
+def test_save_recovery_reopens_owned_slot_and_checks_name_before_writing(service):
+    visits = []
+
+    class RecoveryPhone(FakePhone):
+        def header(self):
+            return {"slot": 169, "name": "Other preset"}
+
+        def back(self):
+            visits.append("list")
+
+        def open_slot(self, slot):
+            visits.append(slot)
+
+        def verify_slot(self, slot, expected_name=None):
+            if expected_name:
+                visits.append(expected_name)
+            return {"slot": slot, "name": "Fresh tone"}
+
+        def verify_plan(self, desired):
+            visits.append("readback")
+
+        def save_reload(self, *args, **kwargs):
+            visits.append("save")
+            return super().save_reload(*args, **kwargs)
+
+    service.phone_factory = RecoveryPhone
+    s = service.create_session(SessionRequest())
+    service.update(s, owned=True, current_plan=plan().model_dump(), status="needs_attention", accepted=True)
+    assert wait_job(service, service.save(s["id"]))["status"] == "complete"
+    assert visits == ["list", 172, "Fresh tone", "readback", "save"]
+    assert service.session(s["id"])["status"] == "complete"
+
+
+def test_save_recovery_refuses_a_renamed_owned_slot(service):
+    class RenamedPhone(FakePhone):
+        def verify_slot(self, slot, expected_name=None):
+            if expected_name:
+                raise RuntimeError("Preset name mismatch: another song now owns this slot")
+            return super().verify_slot(slot)
+
+        def verify_plan(self, desired):
+            pytest.fail("Do not inspect or save another song's settings")
+
+        def save_reload(self, *args, **kwargs):
+            pytest.fail("Do not overwrite another song")
+
+    service.phone_factory = RenamedPhone
+    s = service.create_session(SessionRequest())
+    service.update(s, owned=True, current_plan=plan().model_dump(), status="needs_attention")
+    result = wait_job(service, service.save(s["id"]))
+    assert result["status"] == "failed"
+    assert "another song" in result["message"]
+    assert service.store.list("preset") == []
 
 
 def test_best_candidate_retained_and_plateau_stops(service, monkeypatch):

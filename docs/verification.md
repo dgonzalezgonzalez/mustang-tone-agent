@@ -4,7 +4,7 @@ This record distinguishes software checks from physical demonstration. Live vali
 
 ## Completed checks
 
-- Twenty-nine automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures, pedal-triggered slot changes, bypass readback, safe save navigation, starred current slots, keyboard dismissal, truncated names, fresh playing between candidates, periodic screen wake and HTTP authentication/origin checks.
+- Thirty-six automated tests pass for catalog refusal, recording quality, no microphone fallback, preservation of a named existing song preset, serialization, duplicate requests, cancellation, trial bounds, best retention and automatic restoration after a worse final trial, restore failures, pedal-triggered slot changes, bypass readback, safe save navigation, starred current slots, keyboard dismissal, truncated names, fresh playing between candidates, periodic screen wake, unknown-screen refusal, bounded empty-neighbor lookup, save recovery ownership, acceptance/error separation and HTTP authentication/origin checks.
 - React/TypeScript production build passes; Ruff passes.
 - GT40 USB input detected under Windows WASAPI, 48 kHz stereo.
 - Android Fender Tone 5.1.3 selected Studio Preamp, British 70s, Chromatic Pitch Shifter and Sine Chorus. Ordered three-block chain was read back through model titles.
@@ -15,7 +15,7 @@ This record distinguishes software checks from physical demonstration. Live vali
 - The official studio recording's short excerpt was acquired locally and processed with Demucs `htdemucs_6s`. Guitar output passed basic quality checks. Audio and weights are private and are not published.
 - Two ten-second player baselines were captured from Fender USB. Both passed silence, clipping, contamination and phrase-comparability checks; active Fender Tone Bluetooth and the selected slot passed checks before and after capture. Baseline diagnostic variation was 1.4782; reference distances were 6.9631 and 6.0142. These are feature distances, not similarity percentages or listening acceptance.
 - The first gain adjustment (6.5 to 7.0) was verified and recorded. Its valid take measured 5.5499, below the baseline reference distances, but the improvement was smaller than baseline variation. The player still reported the tone too clean/thin, so song matching is not accepted.
-- A second verified adjustment to gain 8.5 produced a valid take with distance 7.4320. The two-trial plateau rule stopped this refinement pass and selected the gain-7.0 take as its measured best. The player also said gain 7.0 sounded closer. Full song-match acceptance remains separate from this preference.
+- A second verified adjustment to gain 8.5 produced a valid take with distance 7.4320. The two-trial plateau rule stopped this refinement pass, restored and verified gain 7.0 as its measured best. The player also said gain 7.0 sounded closer and explicitly accepted it as the first demo version. This is listening acceptance of an approximation, not a claim of an exact studio match.
 - Browser playback was verified to pause and hide playback controls during an agent-started capture, then restore the controls afterward. This check mocked only job status and sent no hardware commands.
 - Physical master volume has not been touched by the adapter.
 - Tev 0.8B: 26/40 correct, warm p95 1.68 seconds. Tev 4B: 32/40 correct, warm p95 6.38 seconds. Neither is enabled automatically.
@@ -24,8 +24,8 @@ This record distinguishes software checks from physical demonstration. Live vali
 
 ## Remaining live acceptance
 
-- Refine with the player within bounds, retain the best candidate and save it.
+- Finish saving and reloading the accepted gain-7.0 version after the empty-neighbor navigation correction.
 - Exercise MGT-4 selection of the saved demo and both effect bypasses in First 3 mode with the player.
 - Browser workbench renders correctly; installer and desktop launcher checks pass. Continue browser workflow checks after the song preset is applied.
 
-The pre-existing slot 171 song preset has not been edited or used to infer the demo settings. No similarity acceptance is reported before usable reference audio, actual playing and listening feedback exist.
+The pre-existing slot 171 song preset has not been edited or used to infer the demo settings. The accepted demo uses a separated studio excerpt, actual player takes and listening feedback; its diagnostic distances remain sensitive to playing and separation artifacts.

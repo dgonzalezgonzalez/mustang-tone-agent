@@ -45,6 +45,23 @@ def test_historical_bluetooth_log_does_not_prove_current_connection():
     assert phone.verify_ble()["connected"] is True
 
 
+def test_unknown_screen_does_not_receive_navigation_taps():
+    phone = object.__new__(Phone)
+    phone.dismiss_parameter = lambda: None
+    phone.header = lambda: (_ for _ in ()).throw(ControlError("Unrecognized screen"))
+    phone.texts = lambda: [Text("Notifications", 0.5, 0.3, 1)]
+    phone.back = lambda: pytest.fail("Unknown screens must not receive Back taps")
+    with pytest.raises(ControlError, match="no navigation tap"):
+        phone.ensure_editor()
+
+
+def test_unrelated_central_text_is_not_a_numeric_drawer():
+    phone = object.__new__(Phone)
+    phone.region_texts = lambda *a: [Text("Unrelated", 0.67, 0.495, 1)]
+    phone.tap = lambda *a: pytest.fail("Unrelated screens must not receive a dismissal tap")
+    phone.dismiss_parameter()
+
+
 def test_tap_without_changed_readback_cannot_report_success():
     phone = object.__new__(Phone)
     phone.cancel = threading.Event()
@@ -119,6 +136,27 @@ def test_starred_current_slot_is_a_valid_save_target(monkeypatch):
     phone.region_texts = lambda *a: [current]
     monkeypatch.setattr("mustang.phone.time.sleep", lambda *a: None)
     assert phone.save_row(172) is current
+
+
+def test_reload_neighbor_is_located_even_when_initially_offscreen():
+    phone = object.__new__(Phone)
+    looked_up = []
+
+    def row(slot):
+        looked_up.append(slot)
+        return Text(f"{slot} Empty", 0.5, 0.6, 1)
+
+    phone.preset_row = row
+    assert phone.empty_reload_neighbor(172).text == "173 Empty"
+    assert looked_up == [173]
+
+
+def test_reload_refuses_named_neighbors_instead_of_selecting_them():
+    phone = object.__new__(Phone)
+    phone.preset_row = lambda slot: Text(f"{slot} Existing song", 0.5, 0.6, 1)
+    phone.tap = lambda *a: pytest.fail("Named neighboring presets must not be selected")
+    with pytest.raises(ControlError, match="No verified adjacent empty"):
+        phone.empty_reload_neighbor(172)
 
 
 def test_closed_keyboard_never_sends_a_back_event():

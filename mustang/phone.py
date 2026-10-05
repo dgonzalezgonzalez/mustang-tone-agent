@@ -204,6 +204,7 @@ class Phone:
         self.connect()
         self.run("shell", "input", "keyevent", "224")
         self.run("shell", "wm", "dismiss-keyguard")
+        self.run("shell", "cmd", "statusbar", "collapse")
         self.run("shell", "am", "start", "-n", "com.fender.tone/.MainActivity")
         time.sleep(0.6)
 
@@ -263,7 +264,7 @@ class Phone:
                     self.tap(0.88, row[0].y)
                     time.sleep(0.6)
                 else:
-                    self.back()
+                    raise ControlError("Unrecognized phone screen; no navigation tap sent. Reopen Fender Tone.")
         raise ControlError("Could not reach a recognized preset editor.")
 
     def verify_slot(self, slot: int, expected_name: str | None = None):
@@ -348,6 +349,16 @@ class Phone:
         self.tap(0.88, row.y)
         time.sleep(0.6)
         self.verify_slot(slot)
+
+    def empty_reload_neighbor(self, slot: int) -> Text:
+        # Returning from the editor can leave the list scrolled before the saved
+        # slot. Find and stabilize an adjacent row rather than relying on visibility.
+        for neighbor in (slot + 1, slot - 1):
+            if 1 <= neighbor <= 200:
+                row = self.preset_row(neighbor)
+                if row.confidence > 0.9 and re.fullmatch(rf"{neighbor}\s+Empty", row.text):
+                    return row
+        raise ControlError("No verified adjacent empty preset available for reload")
 
     def knobs(self) -> list[dict]:
         image = self.screenshot()
@@ -540,9 +551,20 @@ class Phone:
         bottom = self.region_texts(0.92, 0.98)
         # The numeric drawer replaces the footer with +/- controls. A pedal's miniature logo
         # must never be mistaken for a drawer label/value pair.
-        if any(0.485 < t.y < 0.505 and 0.60 < t.x < 0.74 for t in texts) and not any(
+        parameter_names = {
+            "volume", "gain", "treble", "middle", "bass", "mix", "pitch", "delay",
+            "feedback", "tone", "level", "depth", "phase",
+        }
+        if any(
+            t.text.casefold() in parameter_names and 0.485 < t.y < 0.505 and 0.60 < t.x < 0.74
+            for t in texts
+        ) and not any(
             t.text.casefold() in {"add block", "amp settings", "remove", "replace"} for t in bottom
         ):
+            if self.selected_amp() not in {
+                "Studio Preamp", "British 70s", "Chromatic Pitch Shifter", "Sine Chorus"
+            }:
+                raise ControlError("Unrecognized parameter screen; no dismissal tap sent")
             self.tap(0.15, 0.11)
             time.sleep(0.4)
 
@@ -685,18 +707,8 @@ class Phone:
         self.verify_slot(slot, name)
         getattr(self, "progress", lambda _: None)("Saved; switching away and reloading the preset")
         self.back()
-        texts = self.texts()
-        rows = [t for t in texts if 0.17 < t.y < 0.9 and re.fullmatch(r"\d{1,3}\s+Empty", t.text)]
-        safe = next((t for t in rows if int(t.text.split()[0]) != slot), None)
-        if safe is None and any(t.text.replace(" ", "").casefold() == "mypresets" for t in texts):
-            self.swipe(0.65, 0.72, 0.65, 0.60, 1100)
-            time.sleep(1)
-            texts = self.texts()
-            rows = [t for t in texts if 0.17 < t.y < 0.9 and re.fullmatch(r"\d{1,3}\s+Empty", t.text)]
-            safe = next((t for t in rows if int(t.text.split()[0]) != slot), None)
-        if safe is None:
-            raise ControlError("No adjacent empty preset visible for a verified reload")
-        safe = self.preset_row(int(safe.text.split()[0]))
+        time.sleep(0.6)
+        safe = self.empty_reload_neighbor(slot)
         # Select an untouched empty neighbor, then select our saved preset: this actually reloads the amp.
         self.tap(safe.x, safe.y)
         time.sleep(0.5)
